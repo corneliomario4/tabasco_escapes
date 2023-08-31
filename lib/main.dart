@@ -4,10 +4,14 @@ import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:firebase_ui_localizations/firebase_ui_localizations.dart';
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:tabasco_escapes/bloc/bloc/pagar_bloc.dart';
 import 'package:tabasco_escapes/pages/comunity_page.dart';
 import 'package:tabasco_escapes/pages/home_page.dart';
 import 'package:tabasco_escapes/pages/planner_page.dart';
 import 'package:tabasco_escapes/pages/rutas.dart';
+import 'package:tabasco_escapes/pages/pago_page.dart';
 import 'firebase_options.dart';
 
 import 'dart:io' show Platform;
@@ -15,9 +19,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Stripe.publishableKey = "pk_test_51Nk96OIkn5iPfYiHixlZAsyQAOlV4qnBXQli6NZsFVfB6zCBUKgXxRq3myCnLJKwd0rjXx192KBjK4Qms6b6xAUh009nfDWf2R";
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await Stripe.instance.applySettings();
 
   runApp(const MyApp());
 }
@@ -27,72 +34,78 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'PlayTab',
-      theme: ThemeData(
-          primaryColor: const Color.fromARGB(255, 158, 30, 68),
-          appBarTheme:
-              const AppBarTheme(color: Color.fromARGB(255, 158, 30, 68))),
-      initialRoute:
-          FirebaseAuth.instance.currentUser != null ? "home" : "login",
-      //initialRoute: "home",
-      debugShowCheckedModeBanner: false,
-      locale: const Locale('es'),
-      localizationsDelegates: [
-        FirebaseUILocalizations.withDefaultOverrides(const LabelOverrides()),
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        FirebaseUILocalizations.delegate
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_)=> PagarBloc(),)
       ],
-      routes: {
-        "home": (context) => const HomePage(),
-        "rutas": (context) => const Rutas(),
-        "comunity": (context) => ComunityPage(),
-        "planner": (context) => PlannerPage(),
-        "profile": (context) => ProfileScreen(
-              providers: [
-                EmailAuthProvider(),
-                GoogleProvider(
-                    clientId:
-                        Platform.isIOS ? "718367715543-ogp7nuj35gdgq67rg57r2atuubokmvkm.apps.googleusercontent.com" : "718367715543-k0ns3laihb1jnk9rpgs5lqos67oj08tp.apps.googleusercontent.com")
-              ],
-              actions: [
-                SignedOutAction((context) {
-                  Navigator.pushReplacementNamed(context, 'login');
-                }),
-              ],
-              appBar: AppBar(
-                title: const Text("Mi perfil"),
+      child: MaterialApp(
+        title: 'PlayTab',
+        theme: ThemeData(
+            primaryColor: const Color.fromARGB(255, 158, 30, 68),
+            appBarTheme:
+                const AppBarTheme(color: Color.fromARGB(255, 158, 30, 68))),
+        initialRoute:
+            FirebaseAuth.instance.currentUser != null ? "home" : "login",
+        //initialRoute: "home",
+        debugShowCheckedModeBanner: false,
+        locale: const Locale('es'),
+        localizationsDelegates: [
+          FirebaseUILocalizations.withDefaultOverrides(const LabelOverrides()),
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          FirebaseUILocalizations.delegate
+        ],
+        routes: {
+          "home": (context) => const HomePage(),
+          "rutas": (context) => const Rutas(),
+          "comunity": (context) => ComunityPage(),
+          "upgrade": (context) => PagoPage(),
+          "planner": (context) => PlannerPage(),
+          "profile": (context) => ProfileScreen(
+                providers: [
+                  EmailAuthProvider(),
+                  GoogleProvider(
+                      clientId:
+                          Platform.isIOS ? "718367715543-ogp7nuj35gdgq67rg57r2atuubokmvkm.apps.googleusercontent.com" : "718367715543-k0ns3laihb1jnk9rpgs5lqos67oj08tp.apps.googleusercontent.com")
+                ],
+                actions: [
+                  SignedOutAction((context) {
+                    Navigator.pushReplacementNamed(context, 'login');
+                  }),
+                ],
+                appBar: AppBar(
+                  title: const Text("Mi perfil"),
+                ),
               ),
-            ),
-        "login": (context) => SignInScreen(
-              providers: [
-                EmailAuthProvider(),
-                GoogleProvider(
-                    clientId:
-                        Platform.isIOS ? "718367715543-ogp7nuj35gdgq67rg57r2atuubokmvkm.apps.googleusercontent.com" : "718367715543-k0ns3laihb1jnk9rpgs5lqos67oj08tp.apps.googleusercontent.com")
-              ],
-              headerBuilder: (context, constraints, _) {
-                return Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Image.asset("assets/img/logo.png"),
-                );
-              },
-              actions: [
-                AuthStateChangeAction<SignedIn>((context, _) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text(
-                          "Bienvendio ${FirebaseAuth.instance.currentUser?.displayName} !")));
-                  Navigator.pushReplacementNamed(context, "home");
-                }),
-                AuthStateChangeAction<UserCreated>((context, _) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Bienvendio")));
-                  Navigator.pushReplacementNamed(context, "home");
-                })
-              ],
-            ),
-      },
+          "login": (context) => SignInScreen(
+                providers: [
+                  EmailAuthProvider(),
+                  GoogleProvider(
+                      clientId:
+                          Platform.isIOS ? "718367715543-ogp7nuj35gdgq67rg57r2atuubokmvkm.apps.googleusercontent.com" : "718367715543-k0ns3laihb1jnk9rpgs5lqos67oj08tp.apps.googleusercontent.com")
+                ],
+                headerBuilder: (context, constraints, _) {
+                  return Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Image.asset("assets/img/logo.png"),
+                  );
+                },
+                actions: [
+                  AuthStateChangeAction<SignedIn>((context, _) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(
+                            "Bienvendio ${FirebaseAuth.instance.currentUser?.displayName} !")));
+                    Navigator.pushReplacementNamed(context, "home");
+                  }),
+                  AuthStateChangeAction<UserCreated>((context, _) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Bienvendio")));
+                    Navigator.pushReplacementNamed(context, "home");
+                  })
+                ],
+              ),
+        },
+      ),
     );
   }
 }

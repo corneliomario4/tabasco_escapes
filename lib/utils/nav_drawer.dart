@@ -54,6 +54,12 @@ class NavDrawer extends StatelessWidget {
           titulo: "Mi perfil",
           icono: Icons.person,
           ruta: "profile"),
+      menuItem(
+        context: context,
+        titulo: "Actualizar a cuenta de empresa",
+        icono: Icons.refresh,
+        ruta: "upgrade"
+      )
     ]);
   }
 
